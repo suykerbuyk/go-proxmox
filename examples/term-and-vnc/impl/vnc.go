@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/luthermonson/go-proxmox"
 	"github.com/rs/zerolog/log"
+	"github.com/suykerbuyk/go-proxmox"
 )
 
 var tickets = make(map[string]*proxmox.VNC)

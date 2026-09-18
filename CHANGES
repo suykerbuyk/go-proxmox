@@ -1,0 +1,43 @@
+Changes from upstream github.com/luthermonson/go-proxmox
+========================================================
+
+This file records the modifications made in this fork, as required by
+section 4(b) of the Apache License, Version 2.0.
+
+The upstream project at github.com/luthermonson/go-proxmox is the canonical
+source. Use it unless you specifically need this fork.
+
+
+2026-09-18  Forked from github.com/luthermonson/go-proxmox at commit
+            f9f8ec1c961caca60dcf02adcabda7cb2b5d6530.
+
+            Up to and including that commit the contents of this
+            repository are identical to upstream.
+
+2026-09-18  Renamed the Go module path from
+            github.com/luthermonson/go-proxmox to
+            github.com/suykerbuyk/go-proxmox.
+
+            Changed, 107 files:
+              - go.mod: the module declaration.
+              - 101 .go files: the self-import path only. No program
+                logic, no exported identifier and no behaviour was
+                changed by this commit.
+              - examples/sdn/go.mod, examples/term-and-vnc/go.mod and
+                examples/vm-template/go.mod: the replace and require
+                paths of the three nested example modules.
+              - AGENTS.md and README.md: documentation references to the
+                import path, and the repository-status badges.
+
+            Deliberately NOT changed, so that they keep pointing at the
+            upstream project they describe:
+              - proxmox.go:502, a doc comment citing upstream issue
+                luthermonson/go-proxmox#221, which does not exist here.
+              - migration/v0.6.0.md, migration/v0.7.0.md and
+                migration/v0.7.1.md: historical links to upstream pull
+                requests and issues.
+              - README.md links to five unrelated upstream repositories.
+
+            Removed: the codecov badge from README.md. It embedded a
+            repository token belonging to the upstream project, which
+            does not apply to this fork.

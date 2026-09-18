@@ -2,12 +2,12 @@ package mocks
 
 import (
 	"github.com/h2non/gock"
-	"github.com/luthermonson/go-proxmox/tests/mocks/capture"
-	"github.com/luthermonson/go-proxmox/tests/mocks/config"
-	"github.com/luthermonson/go-proxmox/tests/mocks/pve6x"
-	"github.com/luthermonson/go-proxmox/tests/mocks/pve7x"
-	"github.com/luthermonson/go-proxmox/tests/mocks/pve8x"
-	"github.com/luthermonson/go-proxmox/tests/mocks/pve9x"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/capture"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/config"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/pve6x"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/pve7x"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/pve8x"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/pve9x"
 )
 
 func On(c config.Config) {

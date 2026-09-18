@@ -43,7 +43,7 @@ clean up after themselves — don't leave artifacts on the target cluster.
 
 ## Architecture
 
-The repo is a single Go package, `github.com/luthermonson/go-proxmox`, that
+The repo is a single Go package, `github.com/suykerbuyk/go-proxmox`, that
 wraps the Proxmox VE `/api2/json` REST API. Files at the root are organized by
 Proxmox resource (`nodes.go`, `virtual_machine.go`, `containers.go`,
 `cluster.go`, `storage.go`, `access.go`, `tasks.go`, …) and one large

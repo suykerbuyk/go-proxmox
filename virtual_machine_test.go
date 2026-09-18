@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/luthermonson/go-proxmox/tests/mocks"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks"
 )
 
 func TestVirtualMachine_Ping(t *testing.T) {

@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/luthermonson/go-proxmox/tests/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks"
 )
 
 // vmAgent101 returns a *VirtualMachine wired to vmid 101 on node1 for QGA

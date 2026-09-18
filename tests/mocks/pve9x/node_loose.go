@@ -2,7 +2,7 @@ package pve9x
 
 import (
 	"github.com/h2non/gock"
-	"github.com/luthermonson/go-proxmox/tests/mocks/config"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/config"
 )
 
 // nodeLoose registers gock fixtures for the small "loose" /nodes/{node}/*

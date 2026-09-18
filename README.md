@@ -1,10 +1,10 @@
 
 # Proxmox API Client Go Package
-[![Continuous Integration](https://github.com/luthermonson/go-proxmox/actions/workflows/ci.yaml/badge.svg)](https://github.com/luthermonson/go-proxmox/actions/workflows/ci.yaml) [![GitHub license](https://img.shields.io/github/license/luthermonson/go-proxmox)](https://github.com/luthermonson/go-proxmox/blob/main/LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/luthermonson/go-proxmox)](https://github.com/luthermonson/go-proxmox/issues)
-[![GitHub release](https://img.shields.io/github/release/luthermonson/go-proxmox.svg)](https://GitHub.com/luthermonson/go-proxmox/releases/) [![codecov](https://codecov.io/gh/luthermonson/go-proxmox/graph/badge.svg?token=GQSSZ0ZHZ4)](https://codecov.io/gh/luthermonson/go-proxmox) [![Go Report Card](https://goreportcard.com/badge/github.com/luthermonson/go-proxmox)](https://goreportcard.com/report/github.com/luthermonson/go-proxmox) [![Go Reference](https://pkg.go.dev/badge/github.com/luthermonson/go-proxmox.svg)](https://pkg.go.dev/github.com/luthermonson/go-proxmox)
+[![Continuous Integration](https://github.com/suykerbuyk/go-proxmox/actions/workflows/ci.yaml/badge.svg)](https://github.com/suykerbuyk/go-proxmox/actions/workflows/ci.yaml) [![GitHub license](https://img.shields.io/github/license/suykerbuyk/go-proxmox)](https://github.com/suykerbuyk/go-proxmox/blob/main/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/suykerbuyk/go-proxmox)](https://github.com/suykerbuyk/go-proxmox/issues)
+[![GitHub release](https://img.shields.io/github/release/suykerbuyk/go-proxmox.svg)](https://GitHub.com/suykerbuyk/go-proxmox/releases/) [![Go Report Card](https://goreportcard.com/badge/github.com/suykerbuyk/go-proxmox)](https://goreportcard.com/report/github.com/suykerbuyk/go-proxmox) [![Go Reference](https://pkg.go.dev/badge/github.com/suykerbuyk/go-proxmox.svg)](https://pkg.go.dev/github.com/suykerbuyk/go-proxmox)
 
-Join the community to discuss ongoing client development usage, the proxmox API or tooling in the [#go-proxmox](https://gophers.slack.com/archives/C05920LDDD3) channel on the Gophers Slack and see the [self generated docs](https://pkg.go.dev/github.com/luthermonson/go-proxmox) for more usage details.
+Join the community to discuss ongoing client development usage, the proxmox API or tooling in the [#go-proxmox](https://gophers.slack.com/archives/C05920LDDD3) channel on the Gophers Slack and see the [self generated docs](https://pkg.go.dev/github.com/suykerbuyk/go-proxmox) for more usage details.
 
 [![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)](https://gophers.slack.com/archives/C05920LDDD3)
 
@@ -53,7 +53,7 @@ import (
 	"context"
 	"fmt"
 	
-	"github.com/luthermonson/go-proxmox"
+	"github.com/suykerbuyk/go-proxmox"
 )
 
 func main() {
@@ -85,7 +85,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/luthermonson/go-proxmox"
+	"github.com/suykerbuyk/go-proxmox"
 )
 
 func main() {
@@ -416,4 +416,13 @@ $Env:PROXMOX_SECRET = "somegeneratedapitokenguidefromtheproxmoxui"
 mage test:integration
 ```
 
+## Fork notice
 
+This repository is a fork of [luthermonson/go-proxmox](https://github.com/luthermonson/go-proxmox),
+originally created by Luther Monson and its contributors and licensed under the
+Apache License, Version 2.0. Files in this repository have been changed from their
+upstream originals; see [`CHANGES`](CHANGES) for the record and [`NOTICE`](NOTICE)
+for attribution.
+
+The upstream project is the canonical source. Use it unless you specifically need
+this fork.

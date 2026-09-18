@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"testing"
 
-	proxmox "github.com/luthermonson/go-proxmox"
 	"github.com/stretchr/testify/assert"
+	proxmox "github.com/suykerbuyk/go-proxmox"
 )
 
 type TestingData struct {

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/luthermonson/go-proxmox/tests/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks"
 )
 
 func TestCluster_ClusterOptions(t *testing.T) {

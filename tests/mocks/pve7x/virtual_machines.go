@@ -2,7 +2,7 @@ package pve7x
 
 import (
 	"github.com/h2non/gock"
-	"github.com/luthermonson/go-proxmox/tests/mocks/config"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/config"
 )
 
 // virtualMachines registers PVE 7.x VM endpoints. Only the QEMU guest-agent

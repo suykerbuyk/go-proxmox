@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/luthermonson/go-proxmox/tests/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks"
 )
 
 func TestCluster_SDNPrefixLists(t *testing.T) {

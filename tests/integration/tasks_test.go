@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/luthermonson/go-proxmox"
 	"github.com/stretchr/testify/assert"
+	"github.com/suykerbuyk/go-proxmox"
 )
 
 func TestNewTask(t *testing.T) {

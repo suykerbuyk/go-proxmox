@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/h2non/gock"
-	"github.com/luthermonson/go-proxmox/tests/mocks"
-	"github.com/luthermonson/go-proxmox/tests/mocks/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks/config"
 )
 
 const (

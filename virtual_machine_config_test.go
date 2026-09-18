@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/luthermonson/go-proxmox/tests/mocks"
+	"github.com/suykerbuyk/go-proxmox/tests/mocks"
 )
 
 func TestVirtualMachineConfig_MergeDisks(t *testing.T) {

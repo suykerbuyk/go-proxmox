@@ -27,7 +27,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/luthermonson/go-proxmox"
+	"github.com/suykerbuyk/go-proxmox"
 )
 
 const (

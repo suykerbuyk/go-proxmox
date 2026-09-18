@@ -2,9 +2,9 @@ module vm-template
 
 go 1.25.0
 
-replace github.com/luthermonson/go-proxmox => ../../
+replace github.com/suykerbuyk/go-proxmox => ../../
 
-require github.com/luthermonson/go-proxmox v0.0.0-00010101000000-000000000000
+require github.com/suykerbuyk/go-proxmox v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/buger/goterm v1.0.4 // indirect

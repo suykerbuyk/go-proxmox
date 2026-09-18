@@ -1,0 +1,21 @@
+go-proxmox
+==========
+
+This product includes software developed by Luther Monson and the
+go-proxmox contributors:
+
+    https://github.com/luthermonson/go-proxmox
+
+licensed under the Apache License, Version 2.0. See LICENSE for the full
+license text.
+
+------------------------------------------------------------------------
+MODIFICATIONS
+------------------------------------------------------------------------
+
+This repository is a fork of github.com/luthermonson/go-proxmox. Files in
+this repository have been changed from their upstream originals. See
+CHANGES for the record of what was changed and when.
+
+Copyright 2026 John Suykerbuyk and SykeTech LTD, as to those modifications
+only. All other copyright in this work remains with the upstream authors.
