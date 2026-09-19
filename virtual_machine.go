@@ -502,7 +502,27 @@ func (v *VirtualMachine) deleteCloudInitISO(ctx context.Context) (ok bool, err e
 		}
 		iso, ierr := s.ISO(ctx, isoFilename)
 		if ierr != nil {
-			// not on this storage; try the next
+			// Proxmox answers the lookup of a missing volume with the same
+			// 500 it uses for a real failure, so this error alone cannot tell
+			// "not on this storage" apart from "could not look". The storage's
+			// content listing breaks the tie. Deleting the VM cannot be
+			// undone, so a listing that cannot be read, or that carries no
+			// data at all, stops the delete: the ISO may be on this storage.
+			// Treating a null listing as unusable is a decision for this
+			// destructive path only, not a general rule about null payloads.
+			volid := fmt.Sprintf("%s:iso/%s", s.Name, isoFilename)
+			content, lerr := s.GetContent(ctx)
+			if lerr != nil {
+				return false, fmt.Errorf("cannot confirm %s is absent from storage %s: lookup: %w; listing: %w", volid, s.Name, ierr, lerr)
+			}
+			if content == nil {
+				return false, fmt.Errorf("cannot confirm %s is absent from storage %s: lookup: %w; listing returned no data", volid, s.Name, ierr)
+			}
+			if hasVolume(content, volid) {
+				// The listing shows the ISO, so the lookup failure is real.
+				return false, ierr
+			}
+			// Neither the lookup nor the listing finds it on this storage.
 			continue
 		}
 		task, terr := iso.Delete(ctx)
@@ -517,6 +537,16 @@ func (v *VirtualMachine) deleteCloudInitISO(ctx context.Context) (ok bool, err e
 
 	// Not found anywhere — already gone, treat as no-op (matches prior behavior).
 	return true, nil
+}
+
+// hasVolume reports whether volid appears in a storage content listing.
+func hasVolume(content []*StorageContent, volid string) bool {
+	for _, c := range content {
+		if c != nil && c.Volid == volid {
+			return true
+		}
+	}
+	return false
 }
 
 // MigratePreconditions is the pre-flight sibling of Migrate: it returns
