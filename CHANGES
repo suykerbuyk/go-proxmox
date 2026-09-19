@@ -41,3 +41,40 @@ source. Use it unless you specifically need this fork.
             Removed: the codecov badge from README.md. It embedded a
             repository token belonging to the upstream project, which
             does not apply to this fork.
+
+2026-09-19  fix(vm): VirtualMachine.Delete and UnmountCloudInitISO no
+            longer delete the VM when the cloud-init ISO's lookup fails
+            on a storage that may hold it. When a lookup fails, the
+            storage's content listing decides: a listing that shows the
+            ISO, cannot be read, or carries no data stops the delete with
+            an error and no VM DELETE is sent; a listing without the ISO
+            skips the storage, as before. A lookup that finds the ISO
+            still deletes it.
+
+            Changed: virtual_machine.go.
+            Added: virtual_machine_delete_cloudinit_test.go,
+            migration/v0.8.2.md.
+
+2026-09-19  fix(client): every non-2xx response now returns the new
+            exported type *StatusError. Before, 404, 409, 502, 503, 504
+            and 595-599 were decoded as success. StatusError.Is maps
+            404 to ErrNotFound and 401/403 to ErrNotAuthorized. The
+            Error() text of the 400, 500 and 501 errors is unchanged.
+
+            A non-2xx whose body cannot be read is a *StatusError
+            too.
+
+            Changed: proxmox.go, proxmox_test.go (a synthetic
+            StatusCode 0 fixture set to 200), migration/v0.8.2.md,
+            virtual_machine_delete_cloudinit_test.go.
+            Added: status_error_test.go.
+
+2026-09-19  fix(client): 500 and 501 errors now carry the response body
+            in StatusError.Body. Their Error() text is unchanged.
+
+            Changed: proxmox.go, status_error_test.go,
+            migration/v0.8.2.md.
+
+            These three changes are kept as separate commits on this
+            fork's fixes branch, which carries no fork-specific content,
+            so that each can be offered upstream as its own pull request.
