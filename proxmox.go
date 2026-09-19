@@ -50,6 +50,44 @@ func IsNotFound(err error) bool {
 	return errors.Is(err, ErrNotFound)
 }
 
+// StatusError is returned for any non-2xx response from the Proxmox API.
+// Proxmox carries its error message in the HTTP reason phrase, so Status is
+// usually the most useful field. Use errors.As to reach the status code;
+// IsNotFound matches a 404 and IsNotAuthorized matches a 401 or 403.
+type StatusError struct {
+	StatusCode int
+	Status     string // res.Status, e.g. "500 VM 100 is locked (backup)"
+	Body       []byte
+
+	msg   string // preserves the historical Error() text where one existed
+	cause error  // a body read error, or the decode error behind a non-JSON 400's msg
+}
+
+func (e *StatusError) Error() string {
+	if e.msg != "" {
+		return e.msg
+	}
+	if e.Status != "" {
+		return e.Status
+	}
+	return strings.TrimSpace(fmt.Sprintf("%d %s", e.StatusCode, http.StatusText(e.StatusCode)))
+}
+
+// Is maps a 404 to ErrNotFound and a 401 or 403 to ErrNotAuthorized.
+func (e *StatusError) Is(target error) bool {
+	switch target {
+	case ErrNotFound:
+		return e.StatusCode == http.StatusNotFound
+	case ErrNotAuthorized:
+		return e.StatusCode == http.StatusUnauthorized || e.StatusCode == http.StatusForbidden
+	}
+	return false
+}
+
+func (e *StatusError) Unwrap() error {
+	return e.cause
+}
+
 var ErrNoop = errors.New("nothing to do")
 
 func IsErrNoop(err error) bool {
@@ -446,11 +484,14 @@ func (c *Client) authHeaders(header *http.Header) {
 func (c *Client) handleResponse(res *http.Response, v interface{}) error {
 	if res.StatusCode == http.StatusInternalServerError ||
 		res.StatusCode == http.StatusNotImplemented {
-		return errors.New(res.Status)
+		return &StatusError{StatusCode: res.StatusCode, Status: res.Status}
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
+		if res.StatusCode < http.StatusOK || res.StatusCode > 299 {
+			return &StatusError{StatusCode: res.StatusCode, Status: res.Status, Body: body, cause: err}
+		}
 		return err
 	}
 
@@ -464,16 +505,26 @@ func (c *Client) handleResponse(res *http.Response, v interface{}) error {
 	}
 
 	if res.StatusCode == http.StatusBadRequest {
+		se := &StatusError{StatusCode: res.StatusCode, Status: res.Status, Body: body}
 		var errorskey map[string]json.RawMessage
 		if err := json.Unmarshal(body, &errorskey); err != nil {
-			return err
+			se.msg, se.cause = err.Error(), err
+			return se
 		}
 
-		if body, ok := errorskey["errors"]; ok {
-			return fmt.Errorf("bad request: %s - %s", res.Status, body)
+		if errs, ok := errorskey["errors"]; ok {
+			se.msg = fmt.Sprintf("bad request: %s - %s", res.Status, errs)
+			return se
 		}
 
-		return fmt.Errorf("bad request: %s - %s", res.Status, string(body))
+		se.msg = fmt.Sprintf("bad request: %s - %s", res.Status, string(body))
+		return se
+	}
+
+	// Every other non-2xx is an error too, whatever the body and whether or
+	// not the caller wants the response decoded.
+	if res.StatusCode < http.StatusOK || res.StatusCode > 299 {
+		return &StatusError{StatusCode: res.StatusCode, Status: res.Status, Body: body}
 	}
 
 	// if nil passed don't bother to do any unmarshalling

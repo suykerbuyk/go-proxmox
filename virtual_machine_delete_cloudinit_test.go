@@ -216,6 +216,56 @@ func TestVirtualMachine_Delete_CloudInitISOLookup(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "listing 404 stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 404, listingNull)
+				mockISOLookupStatus("st1", 500)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
+			name: "listing 503 stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 503, listingNull)
+				mockISOLookupStatus("st1", 500)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
+			name: "listing 595 stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 595, listingNull)
+				mockISOLookupStatus("st1", 500)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
+			name: "listed iso whose lookup answers 503 stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 200, listingWithISO("st1"))
+				mockISOLookupStatus("st1", 503)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
+			name: "listed iso whose lookup answers 595 stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 200, listingWithISO("st1"))
+				mockISOLookupStatus("st1", 595)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
 			// An unmocked request fails with gock.ErrCannotMatch, which gives
 			// each refusal a distinct error to check it wraps.
 			name: "refusal on a null listing wraps the lookup error",
@@ -436,6 +486,8 @@ func TestVirtualMachine_Delete_CloudInitISONeverLeaked(t *testing.T) {
 		{"empty listing, lookup finds it", 200, listingEmpty, func() { mockISOLookup("st1") }},
 		{"listing without it, lookup finds it", 200, listingWithoutISO, func() { mockISOLookup("st1") }},
 		{"listing 500, lookup finds it", 500, ``, func() { mockISOLookup("st1") }},
+		{"listing 503, lookup finds it", 503, listingNull, func() { mockISOLookup("st1") }},
+		{"listing 595, lookup finds it", 595, listingNull, func() { mockISOLookup("st1") }},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
