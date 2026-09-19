@@ -482,17 +482,17 @@ func (c *Client) authHeaders(header *http.Header) {
 }
 
 func (c *Client) handleResponse(res *http.Response, v interface{}) error {
-	if res.StatusCode == http.StatusInternalServerError ||
-		res.StatusCode == http.StatusNotImplemented {
-		return &StatusError{StatusCode: res.StatusCode, Status: res.Status}
-	}
-
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		if res.StatusCode < http.StatusOK || res.StatusCode > 299 {
 			return &StatusError{StatusCode: res.StatusCode, Status: res.Status, Body: body, cause: err}
 		}
 		return err
+	}
+
+	if res.StatusCode == http.StatusInternalServerError ||
+		res.StatusCode == http.StatusNotImplemented {
+		return &StatusError{StatusCode: res.StatusCode, Status: res.Status, Body: body}
 	}
 
 	c.log.Debugf("RECV: %d - %s", res.StatusCode, res.Status)

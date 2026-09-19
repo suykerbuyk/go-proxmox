@@ -222,6 +222,39 @@ func TestClient_ServerErrorTextIsStatusLine(t *testing.T) {
 	}
 }
 
+// F11: a 500 or 501 carries its response body without changing the error
+// text.
+func TestClient_ServerErrorCarriesBody(t *testing.T) {
+	cases := []scriptedResponse{
+		{500, "500 update VM 101: -net0: invalid format", `{"data":null,"message":"update VM 101: -net0: invalid format - missing model\n"}`},
+		{501, "501 Method 'GET /nodes/node1/nope' not implemented", `{"data":null}`},
+	}
+	for _, r := range cases {
+		t.Run(fmt.Sprint(r.code), func(t *testing.T) {
+			c, _ := scriptedClient(r)
+			err := c.Put(context.Background(), "/nodes/node1/qemu/101/config", nil, nil)
+			se := requireStatusError(t, err, r.code)
+			assert.Equal(t, r.body, string(se.Body))
+			assert.Equal(t, r.status, err.Error())
+		})
+	}
+}
+
+// F11: a body read failure on a 500 still returns the status-line error,
+// with the part of the body that was read.
+func TestClient_ServerErrorBodyReadFailure(t *testing.T) {
+	c := NewClient(TestURI)
+	err := c.handleResponse(&http.Response{
+		StatusCode: 500,
+		Status:     "500 QEMU guest agent is not running",
+		Body:       &failingBody{r: strings.NewReader(`{"data":`)},
+	}, nil)
+	se := requireStatusError(t, err, 500)
+	assert.Equal(t, "500 QEMU guest agent is not running", err.Error())
+	assert.Equal(t, `{"data":`, string(se.Body))
+	assert.ErrorIs(t, err, errBodyRead)
+}
+
 // F2: WaitForAgent keeps retrying on the 500 "agent not running" text and
 // returns once the agent answers.
 func TestVirtualMachine_WaitForAgent_RetriesOnAgentNotRunning(t *testing.T) {
