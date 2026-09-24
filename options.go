@@ -258,7 +258,14 @@ func (c *Client) ensureOwnHTTPClient() {
 func (c *Client) ensureTransport() *http.Transport {
 	c.ensureOwnHTTPClient()
 	if c.httpClient.Transport == nil {
-		c.httpClient.Transport = http.DefaultTransport.(*http.Transport).Clone()
+		// http.DefaultTransport is a variable a program may replace; one
+		// that is not an *http.Transport is treated as a custom
+		// RoundTripper, where this used to panic.
+		dt, ok := http.DefaultTransport.(*http.Transport)
+		if !ok {
+			return nil
+		}
+		c.httpClient.Transport = dt.Clone()
 	}
 	if t, ok := c.httpClient.Transport.(*http.Transport); ok {
 		return t
