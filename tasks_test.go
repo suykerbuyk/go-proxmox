@@ -22,6 +22,22 @@ func TestNewTask(t *testing.T) {
 	assert.Equal(t, UPID("UPID:nodename:00388B23:02D69651:63C4F6AF:tasktype:100:root@pam:"), task.UPID)
 }
 
+// TestNewTask_ShortUPID pins the field-count guard at its boundary. The user
+// is field 7, and the guard used to let a 7-field UPID through, which then
+// panicked indexing it. An 8-field UPID without the trailing colon is whole.
+func TestNewTask_ShortUPID(t *testing.T) {
+	const seven = UPID("UPID:nodename:00388B23:02D69651:63C4F6AF:tasktype:100")
+	var task *Task
+	require.NotPanics(t, func() { task = NewTask(seven, &Client{}) })
+	require.NotNil(t, task)
+	assert.Equal(t, seven, task.UPID)
+	assert.Empty(t, task.Node)
+
+	task = NewTask(UPID("UPID:nodename:00388B23:02D69651:63C4F6AF:tasktype:100:root@pam"), &Client{})
+	assert.Equal(t, "nodename", task.Node)
+	assert.Equal(t, "root@pam", task.User)
+}
+
 func TestTask_Ping_Running(t *testing.T) {
 	mocks.On(mockConfig)
 	defer mocks.Off()

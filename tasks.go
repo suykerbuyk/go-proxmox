@@ -23,8 +23,10 @@ func NewTask(upid UPID, client *Client) *Task {
 		client: client,
 	}
 
+	// UPID:node:pid:pstart:starttime:type:id:user: — the user is field 7, so
+	// a UPID with fewer than 8 fields is returned without its parts parsed.
 	sp := strings.Split(string(task.UPID), ":")
-	if len(sp) == 0 || len(sp) < 7 {
+	if len(sp) < 8 {
 		return task
 	}
 
