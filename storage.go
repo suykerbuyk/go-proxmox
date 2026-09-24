@@ -293,6 +293,9 @@ func (s *Storage) Backup(ctx context.Context, name string) (backup *Backup, err 
 	if err != nil {
 		return nil, err
 	}
+	if backup == nil {
+		return nil, errNoVolumeData(s.Name, "backup", name)
+	}
 
 	backup.client = s.client
 	backup.Node = s.Node

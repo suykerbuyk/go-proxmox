@@ -223,6 +223,10 @@ func (n *Node) Storage(ctx context.Context, name string) (storage *Storage, err 
 	if err != nil {
 		return
 	}
+	if storage == nil {
+		// Not ErrNotFound: an empty reply is not evidence the storage is absent.
+		return nil, fmt.Errorf("node %s returned no data for storage %s", n.Name, name)
+	}
 
 	storage.Node = n.Name
 	storage.client = n.client

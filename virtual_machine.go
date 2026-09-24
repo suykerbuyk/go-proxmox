@@ -766,6 +766,9 @@ func (v *VirtualMachine) AgentExecStatus(ctx context.Context, pid int) (status *
 	if err != nil {
 		return nil, err
 	}
+	if status == nil {
+		return nil, fmt.Errorf("agent exec-status for pid %d returned no data", pid)
+	}
 
 	return
 }
