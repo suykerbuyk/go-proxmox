@@ -308,6 +308,27 @@ func TestVirtualMachine_Delete_CloudInitISOLookup(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			// A 200 {"data":null} lookup is an error, not a panic, so the
+			// listing decides as it does for a failed lookup.
+			name: "null lookup and a listed iso stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 200, listingWithISO("st1"))
+				mockISOLookupStatus("st1", 200)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
+			name: "null lookup and a listing without the iso is skipped",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 200, listingWithoutISO)
+				mockISOLookupStatus("st1", 200)
+				mockVMDelete()
+			},
+		},
+		{
 			name: "iso DELETE failure stops the delete",
 			setup: func() {
 				mockCloudInitNode("st1")

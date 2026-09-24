@@ -227,10 +227,20 @@ func (s *Storage) DeleteContent(ctx context.Context, content string) (*Task, err
 	return NewTask(upid, s.client), nil
 }
 
+// errNoVolumeData is the error for a per-volume read that succeeded with no
+// data ({"data":null}). It deliberately does not wrap ErrNotFound: an empty
+// reply is not evidence that the volume is absent.
+func errNoVolumeData(storage, content, name string) error {
+	return fmt.Errorf("storage %s returned no data for %s:%s/%s", storage, storage, content, name)
+}
+
 func (s *Storage) ISO(ctx context.Context, name string) (iso *ISO, err error) {
 	err = s.client.Get(ctx, fmt.Sprintf("/nodes/%s/storage/%s/content/%s:%s/%s", s.Node, s.Name, s.Name, "iso", name), &iso)
 	if err != nil {
 		return nil, err
+	}
+	if iso == nil {
+		return nil, errNoVolumeData(s.Name, "iso", name)
 	}
 
 	iso.client = s.client
@@ -247,6 +257,9 @@ func (s *Storage) VzTmpl(ctx context.Context, name string) (vztmpl *VzTmpl, err 
 	if err != nil {
 		return nil, err
 	}
+	if vztmpl == nil {
+		return nil, errNoVolumeData(s.Name, "vztmpl", name)
+	}
 
 	vztmpl.client = s.client
 	vztmpl.Node = s.Node
@@ -261,6 +274,9 @@ func (s *Storage) Import(ctx context.Context, name string) (imp *Import, err err
 	err = s.client.Get(ctx, fmt.Sprintf("/nodes/%s/storage/%s/content/%s:%s/%s", s.Node, s.Name, s.Name, "import", name), &imp)
 	if err != nil {
 		return nil, err
+	}
+	if imp == nil {
+		return nil, errNoVolumeData(s.Name, "import", name)
 	}
 
 	imp.client = s.client
