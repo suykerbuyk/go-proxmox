@@ -15,10 +15,11 @@ var ErrUnexpectedShape = errors.New("unexpected shape in a PVE response")
 type ShapeError struct {
 	// Type is the Go type being decoded, e.g. "Task".
 	Type string
-	// Field is the JSON key.
+	// Field is the JSON key; in a list of objects, prefixed by the entry's
+	// index ("[1].online").
 	Field string
 	// Want and Got are JSON kinds: "string", "number", "bool", "object"
-	// or "array".
+	// or "array". Got is "null" or "absent" for a field that is required.
 	Want, Got string
 }
 

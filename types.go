@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -281,51 +282,77 @@ func (cl *Cluster) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	for _, d := range tmp {
-		t, ok := d["type"]
+	// Every field is read checked: a wrong type is a *ShapeError, where the
+	// decoder used to panic; null or absent leaves the field unset. Every
+	// entry must carry its type: one without it used to end the loop and
+	// silently drop the rest of the list.
+	for i, d := range tmp {
+		// at names the entry a field's error is in: "[1].online".
+		at := func(err error) error {
+			var se *ShapeError
+			if errors.As(err, &se) {
+				se.Field = fmt.Sprintf("[%d].%s", i, se.Field)
+			}
+			return err
+		}
+		t, ok, err := stringField("Cluster", d, "type")
+		if err != nil {
+			return at(err)
+		}
 		if !ok {
-			break
+			got := "absent"
+			if _, present := d["type"]; present {
+				got = "null"
+			}
+			return &ShapeError{Type: "Cluster", Field: fmt.Sprintf("[%d].type", i), Want: "string", Got: got}
+		}
+		str := func(key string, dst *string) error {
+			v, ok, err := stringField("Cluster", d, key)
+			if ok {
+				*dst = v
+			}
+			return at(err)
+		}
+		num := func(key string, dst *int) (bool, error) {
+			v, ok, err := numberField("Cluster", d, key)
+			if ok {
+				*dst = int(v)
+			}
+			return ok, at(err)
 		}
 
-		switch t.(string) {
+		switch t {
 		case "cluster":
-			if v, ok := d["id"]; ok {
-				cl.ID = v.(string)
+			for _, err := range []error{str("id", &cl.ID), str("name", &cl.Name)} {
+				if err != nil {
+					return err
+				}
 			}
-			if v, ok := d["name"]; ok {
-				cl.Name = v.(string)
+			if _, err := num("version", &cl.Version); err != nil {
+				return err
 			}
-			if v, ok := d["version"]; ok {
-				cl.Version = int(v.(float64))
-			}
-			if v, ok := d["quorate"]; ok {
-				cl.Quorate = int(v.(float64))
+			if _, err := num("quorate", &cl.Quorate); err != nil {
+				return err
 			}
 		case "node":
 			ns := NodeStatus{
 				Status: "offline",
 				Type:   "node",
 			}
-			if v, ok := d["name"]; ok {
-				ns.Name = v.(string)
-			}
-			if v, ok := d["level"]; ok {
-				ns.Level = v.(string)
-			}
-			if v, ok := d["online"]; ok {
-				ns.Online = int(v.(float64))
-				if ns.Online == 1 {
-					ns.Status = "online"
+			for _, err := range []error{str("name", &ns.Name), str("level", &ns.Level), str("id", &ns.ID), str("ip", &ns.IP)} {
+				if err != nil {
+					return err
 				}
 			}
-			if v, ok := d["id"]; ok {
-				ns.ID = v.(string)
+			ok, err := num("online", &ns.Online)
+			if err != nil {
+				return err
 			}
-			if v, ok := d["ip"]; ok {
-				ns.IP = v.(string)
+			if ok && ns.Online == 1 {
+				ns.Status = "online"
 			}
-			if v, ok := d["local"]; ok {
-				ns.Local = int(v.(float64))
+			if _, err := num("local", &ns.Local); err != nil {
+				return err
 			}
 
 			cl.Nodes = append(cl.Nodes, &ns)
@@ -1583,13 +1610,24 @@ func (l *Log) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	// A row is read only when it carries both n and t, non-null: any other
+	// row is skipped, as a row missing either always was, whatever the type
+	// of the one it has. Of a row that has both, a wrong type is a
+	// *ShapeError, where the decoder used to panic.
 	log := make(map[int]string, len(data))
 	for _, row := range data {
-		if n, ok := row["n"]; ok {
-			if t, ok := row["t"]; ok {
-				log[int(n.(float64))-1] = t.(string)
-			}
+		if row["n"] == nil || row["t"] == nil {
+			continue
 		}
+		n, _, err := numberField("Log", row, "n")
+		if err != nil {
+			return err
+		}
+		t, _, err := stringField("Log", row, "t")
+		if err != nil {
+			return err
+		}
+		log[int(n)-1] = t
 	}
 
 	return copier.Copy(l, Log(log))
