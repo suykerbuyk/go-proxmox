@@ -1887,65 +1887,67 @@ func clusterReplication() {
 		Reply(200).
 		JSON(`{"data":[{"route-map-id":"rm1","order":10,"action":"permit"}]}`)
 
-	// --- /cluster/sdn error fixtures (404/401) for negative paths -------------
+	// --- /cluster/sdn error fixtures for negative paths ----------------------
+	// Each serves a 500, the status Proxmox uses for a missing object. The
+	// tests only assert an error, so no fixture exercises a 404 branch.
 
-	// GET /cluster/sdn/controllers/missing -> 404
+	// GET /cluster/sdn/controllers/missing -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/controllers/missing$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/dns/missing -> 404
+	// GET /cluster/sdn/dns/missing -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/dns/missing$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/ipams/missing -> 404
+	// GET /cluster/sdn/ipams/missing -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/ipams/missing$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/fabrics/fabric/missing -> 404
+	// GET /cluster/sdn/fabrics/fabric/missing -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/fabrics/fabric/missing$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/prefix-lists/missing -> 404
+	// GET /cluster/sdn/prefix-lists/missing -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/prefix-lists/missing$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/prefix-lists/missing/entries -> 404
+	// GET /cluster/sdn/prefix-lists/missing/entries -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/prefix-lists/missing/entries$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/route-maps/entries/missing/entry/99 -> 404
+	// GET /cluster/sdn/route-maps/entries/missing/entry/99 -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/route-maps/entries/missing/entry/99$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/vnets/missing/subnets -> 404
+	// GET /cluster/sdn/vnets/missing/subnets -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/vnets/missing/subnets$").
 		Reply(500).
 		JSON(`{"data":null}`)
 
-	// GET /cluster/sdn/vnets/missing/firewall/options -> 404
+	// GET /cluster/sdn/vnets/missing/firewall/options -> 500
 	gock.New(config.C.URI).
 		Persist().
 		Get("^/cluster/sdn/vnets/missing/firewall/options$").
