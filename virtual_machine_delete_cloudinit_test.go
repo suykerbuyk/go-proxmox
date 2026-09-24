@@ -375,6 +375,19 @@ func TestVirtualMachine_Delete_CloudInitISOLookup(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			// Proxmox counts a task that completed with warnings as a
+			// success (PVE::UPID::status_is_error): the ISO is gone.
+			name: "iso delete task that ends with warnings is a success",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 200, listingWithISO("st1"))
+				mockISOLookup("st1")
+				mockISODeleteTask("st1", `{"data": {"status": "stopped", "exitstatus": "WARNINGS: 1", "node": "`+ciNode+`", "upid": "`+ciTaskUPID("st1")+`"}}`)
+				mockVMDelete()
+			},
+			isoDeletedOn: "st1",
+		},
+		{
 			// A null task status is not a success.
 			name: "iso delete task with a null status stops the delete",
 			setup: func() {
