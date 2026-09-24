@@ -532,6 +532,11 @@ func (v *VirtualMachine) deleteCloudInitISO(ctx context.Context) (ok bool, err e
 		if werr := task.WaitFor(ctx, 5); werr != nil {
 			return false, werr
 		}
+		// WaitFor returns once the task stops, however it ended. A delete
+		// that failed leaves the ISO behind, so the VM must not be deleted.
+		if !task.IsSuccessful {
+			return false, fmt.Errorf("deleting %s from storage %s: task %s ended with exit status %q", iso.VolID, s.Name, task.UPID, task.ExitStatus)
+		}
 		return true, nil
 	}
 
@@ -741,19 +746,28 @@ func (v *VirtualMachine) AgentExec(ctx context.Context, command []string, inputD
 			"input-data": inputData,
 		},
 		&tmpdata)
+	if err != nil {
+		return 0, err
+	}
 
 	p := tmpdata["pid"]
 	if p == nil {
 		return 0, fmt.Errorf("no pid returned from agent exec command")
 	}
-	pid = int(p.(float64))
-	return
+	f, ok := p.(float64)
+	if !ok {
+		return 0, fmt.Errorf("agent exec command returned a non-numeric pid: %v", p)
+	}
+	return int(f), nil
 }
 
 func (v *VirtualMachine) AgentExecStatus(ctx context.Context, pid int) (status *AgentExecStatus, err error) {
 	err = v.client.Get(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/agent/exec-status?pid=%d", v.Node, v.VMID, pid), &status)
 	if err != nil {
 		return nil, err
+	}
+	if status == nil {
+		return nil, fmt.Errorf("agent exec-status for pid %d returned no data", pid)
 	}
 
 	return
@@ -814,7 +828,7 @@ func (v *VirtualMachine) NewFirewallIPSet(ctx context.Context, ipset FirewallIPS
 }
 
 func (v *VirtualMachine) DeleteFirewallIPSet(ctx context.Context, name string, force bool) error {
-	return v.client.Delete(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s", v.Node, v.VMID, name), map[string]interface{}{"force": force})
+	return v.client.DeleteWithParams(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s", v.Node, v.VMID, name), ipSetDeleteParams(force), nil)
 }
 
 func (v *VirtualMachine) GetFirewallIPSetEntries(ctx context.Context, name string) (entries []*FirewallIPSetEntry, err error) {
@@ -826,9 +840,7 @@ func (v *VirtualMachine) NewFirewallIPSetEntry(ctx context.Context, name string,
 }
 
 func (v *VirtualMachine) DeleteFirewallIPSetEntry(ctx context.Context, name string, cidr string, digest string) error {
-	return v.client.Delete(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s/%s", v.Node, v.VMID, name, cidr), map[string]interface{}{
-		"digest": digest,
-	})
+	return v.client.DeleteWithParams(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s/%s", v.Node, v.VMID, name, cidr), ipSetEntryDeleteParams(digest), nil)
 }
 
 func (v *VirtualMachine) GetFirewallIPSetEntry(ctx context.Context, name string, cidr string) (entry *FirewallIPSetEntry, err error) {

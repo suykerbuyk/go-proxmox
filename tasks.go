@@ -3,6 +3,7 @@ package proxmox
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -23,8 +24,10 @@ func NewTask(upid UPID, client *Client) *Task {
 		client: client,
 	}
 
+	// UPID:node:pid:pstart:starttime:type:id:user: — the user is field 7, so
+	// a UPID with fewer than 8 fields is returned without its parts parsed.
 	sp := strings.Split(string(task.UPID), ":")
-	if len(sp) == 0 || len(sp) < 7 {
+	if len(sp) < 8 {
 		return task
 	}
 
@@ -52,13 +55,24 @@ func (t *Task) Ping(ctx context.Context) error {
 		t.IsRunning = true
 	}
 	if t.IsCompleted {
-		if t.ExitStatus == "OK" {
+		if taskExitSucceeded(t.ExitStatus) {
 			t.IsSuccessful = true
 		} else {
 			t.IsFailed = true
 		}
 	}
 	return err
+}
+
+// taskWarnings is the exit status of a task that completed with warnings.
+var taskWarnings = regexp.MustCompile(`^WARNINGS: \d+$`)
+
+// taskExitSucceeded reports whether a stopped task's exit status is a
+// success, by Proxmox's own rule (PVE::UPID::status_is_error): "OK", or
+// "WARNINGS: <n>" for a task that completed but logged warnings. Anything
+// else is the task's error message.
+func taskExitSucceeded(exitStatus string) bool {
+	return exitStatus == "OK" || taskWarnings.MatchString(exitStatus)
 }
 
 func (t *Task) Stop(ctx context.Context) error {

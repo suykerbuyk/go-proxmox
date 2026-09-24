@@ -3,6 +3,7 @@ package proxmox
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -144,9 +145,9 @@ func TestContainerDelete(t *testing.T) {
 // ContainerDeleteOptions{Force: true} actually puts force=1 on the wire as a
 // query parameter to DELETE /nodes/{node}/lxc/{vmid}. The gock mock only
 // matches when the parameter is present, so a regression where the option is
-// silently dropped (as DeleteFirewallIPSet currently does, by passing the map
-// as the response target instead of via DeleteWithParams) makes this test fail
-// with "cannot match any request".
+// silently dropped (as DeleteFirewallIPSet once did, by passing the map as the
+// response target instead of via DeleteWithParams) makes this test fail with
+// "cannot match any request".
 func TestContainerDelete_ForceParam(t *testing.T) {
 	defer gock.Off()
 
@@ -878,66 +879,96 @@ func TestContainer_RRD_TooManyCFs(t *testing.T) {
 }
 
 // ----- Error paths: cover post-call `if err != nil { return nil, err }`
-// branches by routing each mutating endpoint at a deliberately-unmocked VMID
-// (999). Gock has no matcher so the request fails, exercising the early
-// return that the happy-path tests skip.
+// branches by answering each mutating endpoint of VMID 999 with a 500, which
+// exercises the early return that the happy-path tests skip.
 
 func errCt() *Container {
 	return &Container{client: mockClient(), Node: "node1", VMID: 999}
 }
 
+// TestContainer_ErrorPaths_Mutations registers a 500 for every call and
+// requires each error to be that 500. It used to register nothing, so gock
+// never intercepted and every call dialled the real test.localhost:80; it
+// passed only because nothing listened there. Requiring the mocked status,
+// and every mock to be consumed, keeps it from passing on any other error.
 func TestContainer_ErrorPaths_Mutations(t *testing.T) {
 	defer gock.Off()
 	ctx := context.Background()
+	const base = "^/nodes/node1/lxc/999"
 
-	// Delete (DeleteWithParams)
-	_, err := errCt().Delete(ctx, &ContainerDeleteOptions{Force: true})
-	assert.Error(t, err)
+	cases := []struct {
+		name   string
+		method string
+		path   string
+		call   func() error
+	}{
+		{"Delete", http.MethodDelete, base + "$", func() error {
+			_, err := errCt().Delete(ctx, &ContainerDeleteOptions{Force: true})
+			return err
+		}},
+		{"Start", http.MethodPost, base + "/status/start$", func() error { _, err := errCt().Start(ctx); return err }},
+		{"Stop", http.MethodPost, base + "/status/stop$", func() error { _, err := errCt().Stop(ctx); return err }},
+		{"Suspend", http.MethodPost, base + "/status/suspend$", func() error { _, err := errCt().Suspend(ctx); return err }},
+		{"Reboot", http.MethodPost, base + "/status/reboot$", func() error { _, err := errCt().Reboot(ctx); return err }},
+		{"Resume", http.MethodPost, base + "/status/resume$", func() error { _, err := errCt().Resume(ctx); return err }},
+		{"Shutdown", http.MethodPost, base + "/status/shutdown$", func() error { _, err := errCt().Shutdown(ctx, false, 30); return err }},
+		// An explicit NewID skips the NextID lookup, so only the POST is sent.
+		{"Clone", http.MethodPost, base + "/clone$", func() error {
+			_, _, err := errCt().Clone(ctx, &ContainerCloneOptions{NewID: 1000})
+			return err
+		}},
+		{"Migrate", http.MethodPost, base + "/migrate$", func() error {
+			_, err := errCt().Migrate(ctx, &ContainerMigrateOptions{Target: "node2"})
+			return err
+		}},
+		{"Resize", http.MethodPut, base + "/resize$", func() error { _, err := errCt().Resize(ctx, "rootfs", "+1G"); return err }},
+		{"MoveVolume", http.MethodPost, base + "/move_volume$", func() error {
+			_, err := errCt().MoveVolume(ctx, &VirtualMachineMoveDiskOptions{Disk: "rootfs", Storage: "local"})
+			return err
+		}},
+		{"Snapshots", http.MethodGet, base + "/snapshot$", func() error { _, err := errCt().Snapshots(ctx); return err }},
+		{"NewSnapshot", http.MethodPost, base + "/snapshot$", func() error { _, err := errCt().NewSnapshot(ctx, "snap1"); return err }},
+		{"Snapshot.Rollback", http.MethodPost, base + "/snapshot/snap1/rollback$", func() error {
+			_, err := errCt().Snapshot("snap1").Rollback(ctx, true)
+			return err
+		}},
+		{"Snapshot.Delete", http.MethodDelete, base + "/snapshot/snap1$", func() error {
+			_, err := errCt().Snapshot("snap1").Delete(ctx)
+			return err
+		}},
+		{"FirewallRules", http.MethodGet, base + "/firewall/rules$", func() error { _, err := errCt().FirewallRules(ctx); return err }},
+		{"NewFirewallRule", http.MethodPost, base + "/firewall/rules$", func() error {
+			return errCt().NewFirewallRule(ctx, &FirewallRule{Type: "in", Action: "ACCEPT"})
+		}},
+		{"RemoteMigrate", http.MethodPost, base + "/remote_migrate$", func() error {
+			_, err := errCt().RemoteMigrate(ctx, &ContainerRemoteMigrateOptions{TargetEndpoint: "x"})
+			return err
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			defer gock.Off()
+			req := gock.New(TestURI)
+			switch tc.method {
+			case http.MethodGet:
+				req.Get(tc.path)
+			case http.MethodPost:
+				req.Post(tc.path)
+			case http.MethodPut:
+				req.Put(tc.path)
+			case http.MethodDelete:
+				req.Delete(tc.path)
+			}
+			req.Reply(500).JSON(`{"data": null}`)
 
-	// Lifecycle (Post)
-	_, err = errCt().Start(ctx)
-	assert.Error(t, err)
-	_, err = errCt().Stop(ctx)
-	assert.Error(t, err)
-	_, err = errCt().Suspend(ctx)
-	assert.Error(t, err)
-	_, err = errCt().Reboot(ctx)
-	assert.Error(t, err)
-	_, err = errCt().Resume(ctx)
-	assert.Error(t, err)
-	_, err = errCt().Shutdown(ctx, false, 30)
-	assert.Error(t, err)
-
-	// Clone with explicit NewID (skips the NextID branch but still hits the post error)
-	_, _, err = errCt().Clone(ctx, &ContainerCloneOptions{NewID: 1000})
-	assert.Error(t, err)
-
-	// Migrate / Resize / MoveVolume
-	_, err = errCt().Migrate(ctx, &ContainerMigrateOptions{Target: "node2"})
-	assert.Error(t, err)
-	_, err = errCt().Resize(ctx, "rootfs", "+1G")
-	assert.Error(t, err)
-	_, err = errCt().MoveVolume(ctx, &VirtualMachineMoveDiskOptions{Disk: "rootfs", Storage: "local"})
-	assert.Error(t, err)
-
-	// Snapshots / NewSnapshot / Snapshot ops
-	_, err = errCt().Snapshots(ctx)
-	assert.Error(t, err)
-	_, err = errCt().NewSnapshot(ctx, "snap1")
-	assert.Error(t, err)
-	_, err = errCt().Snapshot("snap1").Rollback(ctx, true)
-	assert.Error(t, err)
-	_, err = errCt().Snapshot("snap1").Delete(ctx)
-	assert.Error(t, err)
-
-	// Firewall rules / NewFirewallRule
-	_, err = errCt().FirewallRules(ctx)
-	assert.Error(t, err)
-	assert.Error(t, errCt().NewFirewallRule(ctx, &FirewallRule{Type: "in", Action: "ACCEPT"}))
-
-	// RemoteMigrate
-	_, err = errCt().RemoteMigrate(ctx, &ContainerRemoteMigrateOptions{TargetEndpoint: "x"})
-	assert.Error(t, err)
+			var se *StatusError
+			err := tc.call()
+			if assert.ErrorAs(t, err, &se, "want the mocked 500, got %v", err) {
+				assert.Equal(t, 500, se.StatusCode)
+			}
+			assert.True(t, gock.IsDone(), "the mocked %s was not consumed", tc.method)
+		})
+	}
 }
 
 // ----- Firewall: top-level + aliases -----

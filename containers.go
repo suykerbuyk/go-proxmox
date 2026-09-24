@@ -307,7 +307,7 @@ func (c *Container) NewFirewallIPSet(ctx context.Context, ipset FirewallIPSetCre
 }
 
 func (c *Container) DeleteFirewallIPSet(ctx context.Context, name string, force bool) error {
-	return c.client.Delete(ctx, fmt.Sprintf("/nodes/%s/lxc/%d/firewall/ipset/%s", c.Node, c.VMID, name), map[string]interface{}{"force": force})
+	return c.client.DeleteWithParams(ctx, fmt.Sprintf("/nodes/%s/lxc/%d/firewall/ipset/%s", c.Node, c.VMID, name), ipSetDeleteParams(force), nil)
 }
 
 func (c *Container) GetFirewallIPSetEntries(ctx context.Context, name string) (entries []*FirewallIPSetEntry, err error) {
@@ -319,9 +319,7 @@ func (c *Container) NewFirewallIPSetEntry(ctx context.Context, name string, entr
 }
 
 func (c *Container) DeleteFirewallIPSetEntry(ctx context.Context, name string, cidr string, digest string) error {
-	return c.client.Delete(ctx, fmt.Sprintf("/nodes/%s/lxc/%d/firewall/ipset/%s/%s", c.Node, c.VMID, name, cidr), map[string]interface{}{
-		"digest": digest,
-	})
+	return c.client.DeleteWithParams(ctx, fmt.Sprintf("/nodes/%s/lxc/%d/firewall/ipset/%s/%s", c.Node, c.VMID, name, cidr), ipSetEntryDeleteParams(digest), nil)
 }
 
 func (c *Container) GetFirewallIPSetEntry(ctx context.Context, name string, cidr string) (entry *FirewallIPSetEntry, err error) {
