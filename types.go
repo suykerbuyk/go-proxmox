@@ -276,6 +276,9 @@ type Cluster struct {
 	ID      string
 }
 
+// UnmarshalJSON decodes a /cluster/status list. On an error it may leave
+// the Cluster partly filled (the entries before the bad one), so a caller
+// must not use the value when err != nil.
 func (cl *Cluster) UnmarshalJSON(b []byte) error {
 	var tmp []map[string]interface{}
 	if err := json.Unmarshal(b, &tmp); err != nil {
