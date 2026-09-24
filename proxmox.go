@@ -544,6 +544,35 @@ func (c *Client) handleResponse(res *http.Response, v interface{}) error {
 	return json.Unmarshal(body, &v) // assume passed in type fully supports response
 }
 
+// websocketTLSConfig returns the TLS config the client's own requests use,
+// for a WebSocket dial, which cannot go through the http.Client: the
+// *http.Transport's, looking through every wrapper WithRetry installs. With no
+// Transport (Go's default), or a RoundTripper that is not an
+// *http.Transport, it is nil, Go's default. It used to assert the Transport
+// unchecked, panicking in all three cases.
+func (c *Client) websocketTLSConfig() *tls.Config {
+	if c.httpClient == nil {
+		return nil
+	}
+	rt := c.httpClient.Transport
+	// A shared *http.Client given to several clients WithRetry is wrapped
+	// once per client, so unwrap every layer.
+	for {
+		r, ok := rt.(*retryRoundTripper)
+		if !ok {
+			break
+		}
+		rt = r.base
+	}
+	if t, ok := rt.(*http.Transport); ok && t != nil {
+		return t.TLSClientConfig
+	}
+	if rt != nil {
+		c.log.Debugf("websocket: client's RoundTripper is not an *http.Transport; dialing with the default TLS config")
+	}
+	return nil
+}
+
 // TermWebSocket opens a terminal WebSocket connection to a previously created
 // termproxy session. It is invoked by Node.TermWebSocket, VirtualMachine.TermWebSocket,
 // and Container.TermWebSocket.
@@ -559,11 +588,7 @@ func (c *Client) TermWebSocket(path string, term *Term) (chan []byte, chan []byt
 		path = strings.Replace(c.baseURL, "https://", "wss://", 1) + path
 	}
 
-	var tlsConfig *tls.Config
-	transport := c.httpClient.Transport.(*http.Transport)
-	if transport != nil {
-		tlsConfig = transport.TLSClientConfig
-	}
+	tlsConfig := c.websocketTLSConfig()
 	c.log.Debugf("connecting to websocket: %s", path)
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -725,11 +750,7 @@ func (c *Client) VNCWebSocket(path string, vnc *VNC) (chan []byte, chan []byte, 
 		path = strings.Replace(c.baseURL, "https://", "wss://", 1) + path
 	}
 
-	var tlsConfig *tls.Config
-	transport := c.httpClient.Transport.(*http.Transport)
-	if transport != nil {
-		tlsConfig = transport.TLSClientConfig
-	}
+	tlsConfig := c.websocketTLSConfig()
 	c.log.Debugf("connecting to websocket: %s", path)
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
