@@ -1548,12 +1548,22 @@ func (t *Task) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if starttime, ok := tmp["starttime"]; ok {
-		task.StartTime = time.Unix(int64(starttime.(float64)), 0)
+	// A time of the wrong type is an error, not a panic; null or absent
+	// (a running task has no endtime) leaves it zero.
+	starttime, ok, err := numberField("Task", tmp, "starttime")
+	if err != nil {
+		return err
+	}
+	if ok {
+		task.StartTime = time.Unix(int64(starttime), 0)
 	}
 
-	if endtime, ok := tmp["endtime"]; ok {
-		task.EndTime = time.Unix(int64(endtime.(float64)), 0)
+	endtime, ok, err := numberField("Task", tmp, "endtime")
+	if err != nil {
+		return err
+	}
+	if ok {
+		task.EndTime = time.Unix(int64(endtime), 0)
 	}
 
 	if !task.StartTime.IsZero() && !task.EndTime.IsZero() {
