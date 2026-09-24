@@ -532,6 +532,11 @@ func (v *VirtualMachine) deleteCloudInitISO(ctx context.Context) (ok bool, err e
 		if werr := task.WaitFor(ctx, 5); werr != nil {
 			return false, werr
 		}
+		// WaitFor returns once the task stops, however it ended. A delete
+		// that failed leaves the ISO behind, so the VM must not be deleted.
+		if !task.IsSuccessful {
+			return false, fmt.Errorf("deleting %s from storage %s: task %s ended with exit status %q", iso.VolID, s.Name, task.UPID, task.ExitStatus)
+		}
 		return true, nil
 	}
 

@@ -121,6 +121,12 @@ func mockISOLookupStatus(storage string, code int) {
 
 // mockISODeleteOnly registers the ISO DELETE and its task finishing OK.
 func mockISODeleteOnly(storage string) {
+	mockISODeleteTask(storage, `{"data": {"status": "stopped", "exitstatus": "OK", "node": "`+ciNode+`", "upid": "`+ciTaskUPID(storage)+`"}}`)
+}
+
+// mockISODeleteTask registers the ISO DELETE, and its task's status poll
+// answering taskStatus.
+func mockISODeleteTask(storage, taskStatus string) {
 	gock.New(TestURI).
 		Delete("^" + ciISOPath(storage) + "$").
 		Reply(200).
@@ -129,7 +135,7 @@ func mockISODeleteOnly(storage string) {
 		Persist().
 		Get("^/nodes/" + ciNode + "/tasks/" + ciTaskUPID(storage) + "/status$").
 		Reply(200).
-		JSON(`{"data": {"status": "stopped", "exitstatus": "OK", "node": "` + ciNode + `", "upid": "` + ciTaskUPID(storage) + `"}}`)
+		JSON(taskStatus)
 }
 
 // mockISODelete registers the ISO's per-volume GET, its DELETE, and the
@@ -353,6 +359,29 @@ func TestVirtualMachine_Delete_CloudInitISOLookup(t *testing.T) {
 					Persist().
 					Get("^/nodes/" + ciNode + "/tasks/" + ciTaskUPID("st1") + "/status$").
 					Reply(500)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
+			name: "iso delete task that fails stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 200, listingWithISO("st1"))
+				mockISOLookup("st1")
+				mockISODeleteTask("st1", `{"data": {"status": "stopped", "exitstatus": "unable to delete volume", "node": "`+ciNode+`", "upid": "`+ciTaskUPID("st1")+`"}}`)
+				mockVMDelete()
+			},
+			wantErr: true,
+		},
+		{
+			// A null task status is not a success.
+			name: "iso delete task with a null status stops the delete",
+			setup: func() {
+				mockCloudInitNode("st1")
+				mockListing("st1", 200, listingWithISO("st1"))
+				mockISOLookup("st1")
+				mockISODeleteTask("st1", `{"data": null}`)
 				mockVMDelete()
 			},
 			wantErr: true,
