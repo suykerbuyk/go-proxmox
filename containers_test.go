@@ -144,9 +144,9 @@ func TestContainerDelete(t *testing.T) {
 // ContainerDeleteOptions{Force: true} actually puts force=1 on the wire as a
 // query parameter to DELETE /nodes/{node}/lxc/{vmid}. The gock mock only
 // matches when the parameter is present, so a regression where the option is
-// silently dropped (as DeleteFirewallIPSet currently does, by passing the map
-// as the response target instead of via DeleteWithParams) makes this test fail
-// with "cannot match any request".
+// silently dropped (as DeleteFirewallIPSet once did, by passing the map as the
+// response target instead of via DeleteWithParams) makes this test fail with
+// "cannot match any request".
 func TestContainerDelete_ForceParam(t *testing.T) {
 	defer gock.Off()
 

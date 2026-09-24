@@ -814,7 +814,7 @@ func (v *VirtualMachine) NewFirewallIPSet(ctx context.Context, ipset FirewallIPS
 }
 
 func (v *VirtualMachine) DeleteFirewallIPSet(ctx context.Context, name string, force bool) error {
-	return v.client.Delete(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s", v.Node, v.VMID, name), map[string]interface{}{"force": force})
+	return v.client.DeleteWithParams(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s", v.Node, v.VMID, name), ipSetDeleteParams(force), nil)
 }
 
 func (v *VirtualMachine) GetFirewallIPSetEntries(ctx context.Context, name string) (entries []*FirewallIPSetEntry, err error) {
@@ -826,9 +826,7 @@ func (v *VirtualMachine) NewFirewallIPSetEntry(ctx context.Context, name string,
 }
 
 func (v *VirtualMachine) DeleteFirewallIPSetEntry(ctx context.Context, name string, cidr string, digest string) error {
-	return v.client.Delete(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s/%s", v.Node, v.VMID, name, cidr), map[string]interface{}{
-		"digest": digest,
-	})
+	return v.client.DeleteWithParams(ctx, fmt.Sprintf("/nodes/%s/qemu/%d/firewall/ipset/%s/%s", v.Node, v.VMID, name, cidr), ipSetEntryDeleteParams(digest), nil)
 }
 
 func (v *VirtualMachine) GetFirewallIPSetEntry(ctx context.Context, name string, cidr string) (entry *FirewallIPSetEntry, err error) {

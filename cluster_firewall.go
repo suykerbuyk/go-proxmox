@@ -130,6 +130,25 @@ func (cl *Cluster) FirewallIPSetDelete(ctx context.Context, name string, force b
 	return cl.client.Delete(ctx, path, nil)
 }
 
+// ipSetDeleteParams is the query for a guest ipset DELETE. force goes as 1,
+// like FirewallIPSetDelete above, and is omitted when false (PVE's default).
+// It returns an untyped nil, not a nil map, so DeleteWithParams sends no "?".
+func ipSetDeleteParams(force bool) interface{} {
+	if !force {
+		return nil
+	}
+	return map[string]interface{}{"force": 1}
+}
+
+// ipSetEntryDeleteParams is the query for a guest ipset entry DELETE. An
+// empty digest is omitted: PVE checks a digest only when one is sent.
+func ipSetEntryDeleteParams(digest string) interface{} {
+	if digest == "" {
+		return nil
+	}
+	return map[string]interface{}{"digest": digest}
+}
+
 // ---- /cluster/firewall/ipset/{name}/{cidr} -----------------------------------
 
 func (cl *Cluster) FirewallIPSetEntry(ctx context.Context, name, cidr string) (entry *FirewallIPSetEntry, err error) {
