@@ -1688,6 +1688,39 @@ func TestVirtualMachine_AgentExec_NoPID(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestVirtualMachine_AgentExec_PostError pins that AgentExec returns the
+// POST's own error. It used to discard it and report "no pid returned", so a
+// caller could not tell a refused exec from a reply without a pid.
+func TestVirtualMachine_AgentExec_PostError(t *testing.T) {
+	defer gock.Off()
+	gock.New(TestURI).
+		Post("^/nodes/node1/qemu/502/agent/exec$").
+		Reply(500).
+		JSON(`{"data": null}`)
+	vm := &VirtualMachine{client: NewClient(TestURI), Node: "node1", VMID: 502}
+	pid, err := vm.AgentExec(context.Background(), []string{"echo"}, "")
+	var se *StatusError
+	require.ErrorAs(t, err, &se)
+	assert.Equal(t, 500, se.StatusCode)
+	assert.Equal(t, 0, pid)
+}
+
+// TestVirtualMachine_AgentExec_NonNumericPID pins that a pid which is not a
+// number is an error, not a panic on the type assertion.
+func TestVirtualMachine_AgentExec_NonNumericPID(t *testing.T) {
+	defer gock.Off()
+	gock.New(TestURI).
+		Post("^/nodes/node1/qemu/502/agent/exec$").
+		Reply(200).
+		JSON(`{"data": {"pid": "x"}}`)
+	vm := &VirtualMachine{client: NewClient(TestURI), Node: "node1", VMID: 502}
+	var err error
+	assert.NotPanics(t, func() {
+		_, err = vm.AgentExec(context.Background(), []string{"echo"}, "")
+	})
+	assert.ErrorContains(t, err, "non-numeric pid")
+}
+
 // TestVirtualMachine_WaitForAgent_Timeout exercises the timeout branch by
 // returning an unrelated error from AgentOsInfo (the helper only retries on
 // the "QEMU guest agent is not running" 500 message). Driving the timeout
