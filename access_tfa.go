@@ -113,14 +113,16 @@ func (c *Client) UpdateTFAEntry(ctx context.Context, userid, id string, opts *TF
 // DeleteTFAEntry removes a single TFA entry. password is the caller's current
 // password when changing another user's TFA (PVE may require it server-side).
 // Pass "" to omit.
+//
+// PVE reads a DELETE's parameters from the query string only, so a password
+// is sent there, and pveproxy's access log records it with the request line.
 func (c *Client) DeleteTFAEntry(ctx context.Context, userid, id, password string) error {
 	if userid == "" || id == "" {
 		return errors.New("userid and entry id are required")
 	}
 	path := fmt.Sprintf("/access/tfa/%s/%s", userid, id)
 	if password != "" {
-		// PVE accepts password via body on DELETE; we pass it as a body map.
-		return c.Delete(ctx, path, map[string]string{"password": password})
+		return c.DeleteWithParams(ctx, path, map[string]string{"password": password}, nil)
 	}
 	return c.Delete(ctx, path, nil)
 }
